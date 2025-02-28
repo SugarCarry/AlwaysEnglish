@@ -58,3 +58,6 @@
    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=ChaXxl/AlwaysEnglish&type=Date" />
  </picture>
 </a>
+
+# ⚡ Visitor count
+![](https://profile-counter.glitch.me/ChaXxl-AlwaysEnglish/count.svg)
