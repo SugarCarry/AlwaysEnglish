@@ -16,6 +16,8 @@ int main(int argc, char *argv[]) {
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
     QGuiApplication app(argc, argv);
+    QCoreApplication::setApplicationName("AlwaysEnglish");
+    QGuiApplication::setQuitOnLastWindowClosed(false);
 
     SettingsHelper::getInstance()->init(argv);
 

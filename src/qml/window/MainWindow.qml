@@ -16,6 +16,7 @@ FluWindow {
     minimumHeight: 320
 
     launchMode: FluWindowType.SingleTask
+    autoVisible: !GlobalModel.isAutoStartLaunch
 
     appBar: FluAppBar {
         icon: window.windowIcon
