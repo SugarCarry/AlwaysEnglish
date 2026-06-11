@@ -57,9 +57,13 @@ jobs:
           if (!(Test-Path $iscc)) {
             $iscc = "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
           }
-          & $iscc InstallerScript.iss
-          if (!(Test-Path "installer.exe")) {
-            throw "package/installer.exe was not generated."
+          $outputDir = Join-Path $env:GITHUB_WORKSPACE "artifacts"
+          New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
+          & $iscc "/O$outputDir" "/FAlwaysEnglish-installer" InstallerScript.iss
+          $installerPath = Join-Path $outputDir "AlwaysEnglish-installer.exe"
+          if (!(Test-Path $installerPath)) {
+            Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "*.exe" | Select-Object FullName
+            throw "$installerPath was not generated."
           }
 
       - name: Upload package
@@ -73,5 +77,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: AlwaysEnglish-windows-installer
-          path: package/installer.exe
+          path: artifacts/AlwaysEnglish-installer.exe
           if-no-files-found: error
