@@ -41,6 +41,21 @@ jobs:
       - name: Deploy Qt runtime
         run: cmake --build build --target Script-DeployRelease
 
+      - name: Bundle MSVC runtime
+        shell: pwsh
+        run: |
+          # windeployqt --compiler-runtime 仅复制 vc_redist.x64.exe 安装器，
+          # 便携包需要松散的 CRT DLL，否则在未安装运行库的机器上双击无反应。
+          Remove-Item -Path "dist/vc_redist.x64.exe" -ErrorAction SilentlyContinue
+          $crtDir = Get-ChildItem -Path "$env:VCToolsRedistDir\x64" -Filter "Microsoft.VC*.CRT" -Directory |
+            Sort-Object Name -Descending | Select-Object -First 1
+          if (-not $crtDir) {
+            throw "Could not locate Microsoft.VC*.CRT under $env:VCToolsRedistDir\x64"
+          }
+          Copy-Item -Path (Join-Path $crtDir.FullName "*.dll") -Destination "dist" -Force
+          Write-Host "Copied CRT runtime from $($crtDir.FullName):"
+          Get-ChildItem -Path "dist" -Filter "*140*.dll" | Select-Object Name
+
       - name: Check package
         shell: pwsh
         run: |
