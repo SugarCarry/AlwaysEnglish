@@ -30,10 +30,6 @@ FluLauncher {
         // 是否开机自启动
         GlobalModel.isAutoStart = SettingsHelper.getAutoStart();
         GlobalModel.isAutoStartLaunch = Utils.isAutoStartLaunch()
-        if (GlobalModel.isAutoStart) {
-            Utils.setAutoStart(true)
-        }
-
         var openCount = SettingsHelper.getOpenCount()
         openCount += 1
         SettingsHelper.saveOpenCount(openCount)
