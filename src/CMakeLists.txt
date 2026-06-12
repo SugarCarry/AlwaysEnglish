@@ -118,7 +118,21 @@ if (CMAKE_BUILD_TYPE MATCHES "Release")
         add_custom_target(Script-DeployRelease
                 COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_SOURCE_DIR}/dist
                 COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} ${CMAKE_SOURCE_DIR}/dist
-                COMMAND ${QT_DEPLOY_QT} --qmldir=${CMAKE_SOURCE_DIR}/src/qml --plugindir ${CMAKE_SOURCE_DIR}/dist/plugins --no-translations --compiler-runtime ${CMAKE_SOURCE_DIR}/dist/${PROJECT_NAME}.exe
+                COMMAND ${QT_DEPLOY_QT} --qmldir=${CMAKE_SOURCE_DIR}/src/qml --plugindir ${CMAKE_SOURCE_DIR}/dist/plugins --no-translations --compiler-runtime --no-opengl-sw --no-system-d3d-compiler ${CMAKE_SOURCE_DIR}/dist/${PROJECT_NAME}.exe
+                # 项目仅使用 QtQuick.Controls.Basic（FluentUI 自绘），移除未使用的样式以减小体积
+                COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_SOURCE_DIR}/dist/qml/QtQuick/Controls/Material
+                COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_SOURCE_DIR}/dist/qml/QtQuick/Controls/Universal
+                COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_SOURCE_DIR}/dist/qml/QtQuick/Controls/Imagine
+                COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_SOURCE_DIR}/dist/qml/QtQuick/Controls/Fusion
+                COMMAND ${CMAKE_COMMAND} -E rm -f
+                        ${CMAKE_SOURCE_DIR}/dist/Qt6QuickControls2Material.dll
+                        ${CMAKE_SOURCE_DIR}/dist/Qt6QuickControls2MaterialStyleImpl.dll
+                        ${CMAKE_SOURCE_DIR}/dist/Qt6QuickControls2Universal.dll
+                        ${CMAKE_SOURCE_DIR}/dist/Qt6QuickControls2UniversalStyleImpl.dll
+                        ${CMAKE_SOURCE_DIR}/dist/Qt6QuickControls2Imagine.dll
+                        ${CMAKE_SOURCE_DIR}/dist/Qt6QuickControls2ImagineStyleImpl.dll
+                        ${CMAKE_SOURCE_DIR}/dist/Qt6QuickControls2Fusion.dll
+                        ${CMAKE_SOURCE_DIR}/dist/Qt6QuickControls2FusionStyleImpl.dll
                 COMMENT "Windows Deploying Qt Dependencies After Build........."
                 SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
