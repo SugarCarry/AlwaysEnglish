@@ -17,6 +17,10 @@ FluWindow {
 
     launchMode: FluWindowType.SingleTask
     autoVisible: !GlobalModel.isAutoStartLaunch
+    closeListener: function(event) {
+        minimizeToTray()
+        event.accepted = false
+    }
 
     appBar: FluAppBar {
         icon: window.windowIcon
@@ -25,7 +29,7 @@ FluWindow {
         showDark: true
         darkClickListener: (button) => handleDarkChanged(button)
         closeClickListener: () => {
-            dialog_close.open()
+            minimizeToTray()
         }
         z: 7
     }
@@ -126,6 +130,10 @@ FluWindow {
     //         dialog.open()
     //     }
     // }
+
+    function minimizeToTray() {
+        timer_window_hide_delay.restart()
+    }
 
     function changeDark() {
         FluTheme.darkMode = FluTheme.dark ? FluThemeType.Light : FluThemeType.Dark

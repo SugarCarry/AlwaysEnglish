@@ -2,6 +2,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QTranslator>
+#include <QDir>
 #include <QObject>
 #include <QThread>
 #include "IconProvider.h"
@@ -18,6 +19,7 @@ int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
     QCoreApplication::setApplicationName("AlwaysEnglish");
     QGuiApplication::setQuitOnLastWindowClosed(false);
+    QDir::setCurrent(QCoreApplication::applicationDirPath());
 
     SettingsHelper::getInstance()->init(argv);
 
@@ -25,7 +27,7 @@ int main(int argc, char *argv[]) {
     const QStringList uiLanguages = QLocale::system().uiLanguages();
     for (const QString &locale: uiLanguages) {
         const QString baseName = "AlwaysEnglish_" + QLocale(locale).name();
-        if (translator.load("./i18n/" + baseName)) {
+        if (translator.load(QCoreApplication::applicationDirPath() + "/i18n/" + baseName + ".qm")) {
             app.installTranslator(&translator);
             break;
         }
