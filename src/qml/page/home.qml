@@ -13,7 +13,7 @@ FluContentPage {
     property bool dragEnabled: true
 
     id: root
-    title: qsTr("App-specific settings")
+    title: qsTr("App-specific language settings")
 
     launchMode: FluPageType.SingleInstance
 
@@ -56,12 +56,48 @@ FluContentPage {
                         rowObj.turnon = table_view.customItem(com_column_turn_on)
                         table_view.setRow(row, rowObj)
 
-                        var jsonStr = JSON.stringify(GlobalModel.exeInfos)
-                        SettingsHelper.saveExeInfos(jsonStr)
+                        saveAppSettings()
+                    }
+                }
+            }
+        }
+    }
 
-                        var array = Array.from(GlobalModel.existingFilePath)
-                        var jsonStr = JSON.stringify(array)
-                        SettingsHelper.saveExistingFilePath(jsonStr)
+    // 目标语言
+    Component {
+        id: com_column_language
+        Item {
+            RowLayout {
+                anchors.centerIn: parent
+
+                FluComboBox {
+                    id: language_combo
+                    width: 90
+                    editable: false
+                    model: ["ENG", "中", "한"]
+
+                    Component.onCompleted: {
+                        var rowObj = table_view.getRow(row)
+                        var exePath = rowObj.path
+                        currentIndex = languageIndex(GlobalModel.exeInfos[exePath]['targetLanguage'])
+                    }
+
+                    onActivated: {
+                        var rowObj = table_view.getRow(row)
+                        var exePath = rowObj.path
+                        var targetLanguage = model[index]
+
+                        if (!ControlInputLayout.isTargetInputInstalled(targetLanguage)) {
+                            showWarning(qsTr("The selected input language is not installed. Please install it in Windows language settings first."), 5000)
+                            currentIndex = languageIndex(GlobalModel.exeInfos[exePath]['targetLanguage'])
+                            return
+                        }
+
+                        GlobalModel.exeInfos[exePath]['targetLanguage'] = targetLanguage
+                        rowObj.language = table_view.customItem(com_column_language)
+                        table_view.setRow(row, rowObj)
+
+                        saveAppSettings()
                     }
                 }
             }
@@ -90,12 +126,7 @@ FluContentPage {
                         rowObj.Caps = table_view.customItem(com_column_caps)
                         table_view.setRow(row, rowObj)
 
-                        var jsonStr = JSON.stringify(GlobalModel.exeInfos)
-                        SettingsHelper.saveExeInfos(jsonStr)
-
-                        var array = Array.from(GlobalModel.existingFilePath)
-                        var jsonStr = JSON.stringify(array)
-                        SettingsHelper.saveExistingFilePath(jsonStr)
+                        saveAppSettings()
                     }
                 }
             }
@@ -121,12 +152,7 @@ FluContentPage {
                         table_view.closeEditor()
                         table_view.removeRow(row)
 
-                        var jsonStr = JSON.stringify(GlobalModel.exeInfos)
-                        SettingsHelper.saveExeInfos(jsonStr)
-
-                        var array = Array.from(GlobalModel.existingFilePath)
-                        var jsonStr = JSON.stringify(array)
-                        SettingsHelper.saveExistingFilePath(jsonStr)
+                        saveAppSettings()
                     }
                 }
             }
@@ -190,21 +216,21 @@ FluContentPage {
             // 是否一直启动
             FluToggleButton {
                 id: btn_AlwaysEnglish
-                text: qsTr("AlwaysEnglish")
+                text: qsTr("Always ENG")
 
                 normalColor: {
                     if (checked) {
                         btn_AlwaysEnglish.text = qsTr("Stop")
                         return Qt.rgba(255, 0, 0, 1)
                     } else {
-                        btn_AlwaysEnglish.text = qsTr("AlwaysEnglish")
+                        btn_AlwaysEnglish.text = qsTr("Always ENG")
                         return FluTheme.dark ? Qt.rgba(62 / 255, 62 / 255, 62 / 255, 1) : Qt.rgba(254 / 255, 254 / 255, 254 / 255, 1)
                     }
                 }
 
                 FluTooltip {
                     visible: btn_AlwaysEnglish.hovered
-                    text: qsTr("Keep English All The Time")
+                    text: qsTr("Force all apps to use the set input method, ignoring the per-app list")
                     delay: 400
                 }
 
@@ -227,6 +253,7 @@ FluContentPage {
                 text: qsTr("Add an APP")
                 onClicked: fileDialog.open()
             }
+
         }
     }
 
@@ -257,28 +284,41 @@ FluContentPage {
             {
                 title: qsTr("icon"),
                 dataIndex: 'icon',
+                width: 80,
                 readOnly: true
             },
             {
                 title: "App",
                 dataIndex: 'name',
-                width: 250,
+                width: 230,
                 readOnly: true
             },
             {
                 title: qsTr("Turn on"),
                 dataIndex: 'turnon',
+                width: 110,
+            },
+            {
+                title: qsTr("Language"),
+                dataIndex: 'language',
+                width: 130,
             },
             {
                 title: qsTr("Cap Lock"),
                 dataIndex: 'Caps',
+                width: 110,
             },
             {
                 title: qsTr("Options"),
                 dataIndex: 'action',
+                width: 110,
                 frozen: true
             }
         ]
+
+        // 窗口/表格尺寸变化时, 让 "App" 列吸收多余宽度, 填满整个表格宽度
+        onWidthChanged: resizeColumns()
+        Component.onCompleted: resizeColumns()
 
         DropArea {
             anchors.fill: parent
@@ -334,16 +374,23 @@ FluContentPage {
         }
 
         for (let key in GlobalModel.exeInfos) {
+            if (!GlobalModel.exeInfos[key].targetLanguage) {
+                GlobalModel.exeInfos[key].targetLanguage = "ENG"
+            }
+
             table_view.appendRow({
                 icon: table_view.customItem(com_ico, {icon: GlobalModel.exeInfos[key].icon}),
                 path: key,
                 name: GlobalModel.exeInfos[key].name,
                 turnon: table_view.customItem(com_column_turn_on),
+                language: table_view.customItem(com_column_language),
                 Caps: table_view.customItem(com_column_caps),
                 action: table_view.customItem(com_action),
                 _key: FluTools.uuid()
             })
         }
+
+        saveAppSettings()
 
         if (GlobalModel.isTaskRunning
                 || (!GlobalModel.hasAutoStartedTask && (GlobalModel.isAutoStart || GlobalModel.isAutoStartLaunch))) {
@@ -406,6 +453,7 @@ FluContentPage {
             name: fileNameWithoutExtension,
             icon: fileIconBase64,
             isTurnOn: true,
+            targetLanguage: "ENG",
             isCapLock: true,
         }
 
@@ -414,16 +462,79 @@ FluContentPage {
             path: exePath,
             name: fileNameWithoutExtension,
             turnon: table_view.customItem(com_column_turn_on),
+            language: table_view.customItem(com_column_language),
             Caps: table_view.customItem(com_column_caps),
             action: table_view.customItem(com_action),
             _key: FluTools.uuid()
         })
 
+        saveAppSettings()
+    }
+
+    function saveAppSettings() {
         var jsonStr = JSON.stringify(GlobalModel.exeInfos)
         SettingsHelper.saveExeInfos(jsonStr)
 
         var array = Array.from(GlobalModel.existingFilePath)
-        var jsonStr = JSON.stringify(array)
+        jsonStr = JSON.stringify(array)
         SettingsHelper.saveExistingFilePath(jsonStr)
+    }
+
+    function languageIndex(language) {
+        if (language === "中") {
+            return 1
+        }
+        if (language === "한") {
+            return 2
+        }
+        return 0
+    }
+
+    // 让 "App" 列吸收表格的多余宽度, 使所有列填满整个表格宽度
+    // (窗口最大化/缩放时表格不再留出右侧大片空白)
+    function resizeColumns() {
+        var cols = table_view.columnSource
+        if (!cols || cols.length === 0) {
+            return
+        }
+
+        // App 列(name)以外的列宽总和
+        var fixedTotal = 0
+        var nameIndex = -1
+        for (var i = 0; i < cols.length; i++) {
+            if (cols[i].dataIndex === 'name') {
+                nameIndex = i
+            } else {
+                fixedTotal += (cols[i].width || 100)
+            }
+        }
+        if (nameIndex === -1) {
+            return
+        }
+
+        // 预留竖直滚动条/边框宽度, 避免出现横向滚动条
+        var available = table_view.width - fixedTotal - 2
+        var nameWidth = Math.max(230, available)
+
+        if (cols[nameIndex].width === nameWidth) {
+            return
+        }
+
+        // 构造全新数组(含新的列对象), 保证 onColumnSourceChanged 触发, 同步重建表头
+        var newCols = []
+        for (var j = 0; j < cols.length; j++) {
+            var col = {}
+            for (var prop in cols[j]) {
+                col[prop] = cols[j][prop]
+            }
+            if (j === nameIndex) {
+                col.width = nameWidth
+            }
+            newCols.push(col)
+        }
+        table_view.columnSource = newCols
+        if (table_view.view) {
+            table_view.view.forceLayout()
+        }
     }
 }

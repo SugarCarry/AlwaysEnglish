@@ -1,8 +1,8 @@
 <div align=center>
     <img width="64" src="doc/preview/logo.png">
 
-# AlwaysEnglish
-可以让指定的软件持续保持英文输入法, 从此不再担心误触导致切换输入法！[去下载](https://github.com/ChaXxl/AlwaysEnglish/releases)
+# AlwaysLang
+可以为不同软件固定不同输入语言，支持 ENG / 中 / 한 自动跟随切换和输入位置语言浮层显示。[去下载](https://github.com/SugarCarry/AlwaysEnglish/releases)
 
 </div>
 
@@ -19,7 +19,7 @@
 # 编译运行
 1. 克隆仓库
    ~~~shell
-   git clone https://github.com/ChaXxl/AlwaysEnglish.git
+   git clone https://github.com/SugarCarry/AlwaysEnglish.git
    ~~~
 
 2. 构建
@@ -48,16 +48,3 @@
 # 相关资料
 * [Windows 键盘布局标识符](https://www.science.co.il/language/Locale-codes.php)
 * [MS-LCID](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-lcid/70feba9f-294e-491e-b6eb-56532684c37f)
-
-# Star History
-
-<a href="https://star-history.com/#ChaXxl/AlwaysEnglish&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=ChaXxl/AlwaysEnglish&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=ChaXxl/AlwaysEnglish&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=ChaXxl/AlwaysEnglish&type=Date" />
- </picture>
-</a>
-
-# ⚡ Visitor count
-![](https://profile-counter.glitch.me/ChaXxl-AlwaysEnglish/count.svg)

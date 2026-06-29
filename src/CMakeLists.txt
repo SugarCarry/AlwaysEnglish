@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(AlwaysEnglish VERSION 0.1 LANGUAGES CXX)
+project(AlwaysLang VERSION 3.0 LANGUAGES CXX)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -16,19 +16,20 @@ else ()
     set(APPLICATION_DIR_PATH ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 endif ()
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Quick)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Quick)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Quick Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Quick Widgets)
 
 find_program(QT_LUPDATE NAMES lupdate)
 find_program(QT_LRELEASE NAMES lrelease)
+set(TRANSLATION_BASENAME AlwaysEnglish)
 file(GLOB TS_FILE_PATHS ${CMAKE_CURRENT_LIST_DIR}/ *.ts)
 add_custom_target(Script-UpdateTranslations
-        COMMAND ${QT_LUPDATE} ${CMAKE_CURRENT_LIST_DIR} -ts ${PROJECT_NAME}_en_US.ts WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-        COMMAND ${QT_LUPDATE} ${CMAKE_CURRENT_LIST_DIR} -ts ${PROJECT_NAME}_zh_CN.ts WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-        COMMAND ${QT_LRELEASE} ${PROJECT_NAME}_en_US.ts WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-        COMMAND ${QT_LRELEASE} ${PROJECT_NAME}_zh_CN.ts WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        COMMAND ${QT_LUPDATE} ${CMAKE_CURRENT_LIST_DIR} -ts ${TRANSLATION_BASENAME}_en_US.ts WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        COMMAND ${QT_LUPDATE} ${CMAKE_CURRENT_LIST_DIR} -ts ${TRANSLATION_BASENAME}_zh_CN.ts WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        COMMAND ${QT_LRELEASE} ${TRANSLATION_BASENAME}_en_US.ts WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        COMMAND ${QT_LRELEASE} ${TRANSLATION_BASENAME}_zh_CN.ts WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${APPLICATION_DIR_PATH}/i18n
-        COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_NAME}_en_US.qm ${PROJECT_NAME}_zh_CN.qm ${APPLICATION_DIR_PATH}/i18n
+        COMMAND ${CMAKE_COMMAND} -E copy ${TRANSLATION_BASENAME}_en_US.qm ${TRANSLATION_BASENAME}_zh_CN.qm ${APPLICATION_DIR_PATH}/i18n
         SOURCES ${TS_FILE_PATHS}
 )
 
@@ -60,6 +61,7 @@ if (${QT_VERSION_MAJOR} GREATER_EQUAL 6)
             IconProvider.h IconProvider.cpp
             utils.hpp
             singleton.h
+            NativeTray.h NativeTray.cpp
             LnkResolver.h LnkResolver.cpp
             ControlInputLayout.h ControlInputLayout.cpp
             GetActiveWindowPath.h GetActiveWindowPath.cpp
@@ -77,8 +79,13 @@ add_dependencies(${PROJECT_NAME} Script-UpdateTranslations)
 target_link_libraries(${PROJECT_NAME} PRIVATE
         Qt${QT_VERSION_MAJOR}::Core
         Qt${QT_VERSION_MAJOR}::Quick
+        Qt${QT_VERSION_MAJOR}::Widgets
         fluentuiplugin
 )
+
+if (WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE imm32)
+endif ()
 
 if (${QT_VERSION} VERSION_LESS 6.1.0)
     set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.${PROJECT_NAME})

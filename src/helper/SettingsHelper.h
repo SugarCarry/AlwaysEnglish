@@ -97,6 +97,42 @@ SINGLETON(SettingsHelper)
         return get("autoStart", QVariant(0)).toBool();
     }
 
+    // 语言跟随显示
+    Q_INVOKABLE void saveLanguageFollowDisplay(bool enabled) {
+        save("languageFollowDisplay", enabled);
+    }
+
+    Q_INVOKABLE bool getLanguageFollowDisplay() {
+        return get("languageFollowDisplay", QVariant(true)).toBool();
+    }
+
+    // 语言跟随浮窗不透明度 (10 - 50), 数值越小越透明
+    Q_INVOKABLE void saveLanguageOverlayOpacity(int opacity) {
+        save("languageOverlayOpacity", opacity);
+    }
+
+    Q_INVOKABLE int getLanguageOverlayOpacity() {
+        return get("languageOverlayOpacity", QVariant(30)).toInt();
+    }
+
+    // 是否启用"开关浮窗"的全局快捷键
+    Q_INVOKABLE void saveLanguageFollowHotkeyEnabled(bool enabled) {
+        save("languageFollowHotkeyEnabled", enabled);
+    }
+
+    Q_INVOKABLE bool getLanguageFollowHotkeyEnabled() {
+        return get("languageFollowHotkeyEnabled", QVariant(false)).toBool();
+    }
+
+    // 开关浮窗显示的全局快捷键 (如 "Ctrl+Shift+L")
+    Q_INVOKABLE void saveLanguageFollowHotkey(const QString &sequence) {
+        save("languageFollowHotkey", sequence);
+    }
+
+    Q_INVOKABLE QString getLanguageFollowHotkey() {
+        return get("languageFollowHotkey", QVariant("Ctrl+Shift+L")).toString();
+    }
+
 private:
     void save(const QString &key, QVariant val);
 

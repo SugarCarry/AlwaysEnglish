@@ -21,7 +21,7 @@
     <name>MainWindow</name>
     <message>
         <location filename="qml/window/MainWindow.qml" line="12"/>
-        <source>AlwaysEnglish</source>
+        <source>AlwaysLang</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -68,7 +68,7 @@ Please go to settings to install English (US) language.</oldsource>
     </message>
     <message>
         <location filename="qml/window/MainWindow.qml" line="112"/>
-        <source>AlwaysEnglish is hidden from the tray, click on the tray to activate the window again</source>
+        <source>AlwaysLang is hidden from the tray, click on the tray to activate the window again</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -182,6 +182,34 @@ Please go to settings to install English (US) language.</oldsource>
     </message>
 </context>
 <context>
+    <name>NativeTray</name>
+    <message>
+        <location filename="NativeTray.cpp" line="29"/>
+        <source>Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="NativeTray.cpp" line="45"/>
+        <source>Quit</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="NativeTray.cpp" line="138"/>
+        <source>On</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="NativeTray.cpp" line="138"/>
+        <source>Off</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="NativeTray.cpp" line="139"/>
+        <source>Input position language display</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>settings</name>
     <message>
         <location filename="qml/page/settings.qml" line="9"/>
@@ -209,13 +237,18 @@ Please go to settings to install English (US) language.</oldsource>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="qml/page/settings.qml" line="76"/>
-        <source>Whether turn on Cap Lock when AlwaysEnglish is on</source>
+        <location filename="qml/page/settings.qml" line="112"/>
+        <source>Whether turn on Cap Lock when Always ENG is on</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="qml/page/settings.qml" line="53"/>
         <source>Running at start</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="qml/page/settings.qml" line="82"/>
+        <source>Show current input language near cursor</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

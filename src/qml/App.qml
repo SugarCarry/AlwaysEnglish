@@ -17,6 +17,17 @@ FluLauncher {
         }
     }
 
+    // 全局快捷键: 开关"光标跟随语言显示"浮窗 (应用不在前台也生效)
+    // 仅当用户启用了快捷键功能且组合键有效时才注册
+    FluHotkey {
+        sequence: GlobalModel.languageFollowHotkeyEnabled ? GlobalModel.languageFollowHotkey : ""
+        onActivated: {
+            GlobalModel.languageFollowDisplay = !GlobalModel.languageFollowDisplay
+            SettingsHelper.saveLanguageFollowDisplay(GlobalModel.languageFollowDisplay)
+            NativeTray.setLanguageFollowDisplay(GlobalModel.languageFollowDisplay)
+        }
+    }
+
     Component.onCompleted: {
         FluApp.init(app)
 
@@ -26,6 +37,12 @@ FluLauncher {
 
         FluTheme.darkMode = SettingsHelper.getDarkMode()
         GlobalModel.isAlwaysCapLock = SettingsHelper.getCapLock()
+        GlobalModel.languageFollowDisplay = SettingsHelper.getLanguageFollowDisplay()
+        GlobalModel.languageOverlayOpacity = SettingsHelper.getLanguageOverlayOpacity()
+        GlobalModel.languageFollowHotkeyEnabled = SettingsHelper.getLanguageFollowHotkeyEnabled()
+        GlobalModel.languageFollowHotkey = SettingsHelper.getLanguageFollowHotkey()
+        GlobalModel.currentLanguage = ControlInputLayout.refreshCurrentLanguage()
+        GlobalModel.caretRect = ControlInputLayout.caretRect
 
         // 是否开机自启动
         GlobalModel.isAutoStart = SettingsHelper.getAutoStart();

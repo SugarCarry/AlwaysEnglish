@@ -21,8 +21,8 @@
     <name>MainWindow</name>
     <message>
         <location filename="qml/window/MainWindow.qml" line="12"/>
-        <source>AlwaysEnglish</source>
-        <translation type="unfinished">英文输入法锁定软件 – V1.2</translation>
+        <source>AlwaysLang</source>
+        <translation type="unfinished">AlwaysLang</translation>
     </message>
     <message>
         <location filename="qml/window/MainWindow.qml" line="69"/>
@@ -70,8 +70,8 @@ Please go to settings to install English (US) language.</oldsource>
     </message>
     <message>
         <location filename="qml/window/MainWindow.qml" line="112"/>
-        <source>AlwaysEnglish is hidden from the tray, click on the tray to activate the window again</source>
-        <translation type="unfinished">AlwaysEnglish 隐藏到托盘了, 点击图标可激活软件</translation>
+        <source>AlwaysLang is hidden from the tray, click on the tray to activate the window again</source>
+        <translation type="unfinished">AlwaysLang 已隐藏到托盘，点击托盘图标可重新打开窗口</translation>
     </message>
     <message>
         <location filename="qml/window/MainWindow.qml" line="116"/>
@@ -117,8 +117,8 @@ Please go to settings to install English (US) language.</oldsource>
     </message>
     <message>
         <location filename="qml/page/home.qml" line="205"/>
-        <source>Keep English All The Time</source>
-        <translation type="unfinished">无论什么软件, 一直保持英文输入法（在设置里决定是否打开大小写键）</translation>
+        <source>Force all apps to use the set input method, ignoring the per-app list</source>
+        <translation type="unfinished">强制所有软件使用设定的输入法（忽略下方的应用列表，是否开启大小写键在设置里决定）</translation>
     </message>
     <message>
         <location filename="qml/page/home.qml" line="225"/>
@@ -189,6 +189,34 @@ Please go to settings to install English (US) language.</oldsource>
     </message>
 </context>
 <context>
+    <name>NativeTray</name>
+    <message>
+        <location filename="NativeTray.cpp" line="29"/>
+        <source>Settings</source>
+        <translation type="unfinished">设置</translation>
+    </message>
+    <message>
+        <location filename="NativeTray.cpp" line="45"/>
+        <source>Quit</source>
+        <translation type="unfinished">退出</translation>
+    </message>
+    <message>
+        <location filename="NativeTray.cpp" line="138"/>
+        <source>On</source>
+        <translation type="unfinished">开</translation>
+    </message>
+    <message>
+        <location filename="NativeTray.cpp" line="138"/>
+        <source>Off</source>
+        <translation type="unfinished">关</translation>
+    </message>
+    <message>
+        <location filename="NativeTray.cpp" line="139"/>
+        <source>Input position language display</source>
+        <translation type="unfinished">当前输入法语言跟随显示</translation>
+    </message>
+</context>
+<context>
     <name>settings</name>
     <message>
         <location filename="qml/page/settings.qml" line="9"/>
@@ -221,13 +249,27 @@ Please go to settings to install English (US) language.</oldsource>
         <translation type="unfinished">开机自启动</translation>
     </message>
     <message>
+        <location filename="qml/page/settings.qml" line="82"/>
+        <source>Show current input language near cursor</source>
+        <translation type="unfinished">在光标附近显示当前输入法语言</translation>
+    </message>
+    <message>
+        <location filename="qml/page/settings.qml" line="114"/>
+        <source>Overlay opacity</source>
+        <translation type="unfinished">浮窗不透明度</translation>
+    </message>
+    <message>
         <source>Sticky on Top</source>
         <translation type="obsolete">窗口置顶</translation>
     </message>
     <message>
-        <location filename="qml/page/settings.qml" line="76"/>
-        <source>Whether turn on Cap Lock when AlwaysEnglish is on</source>
+        <location filename="qml/page/settings.qml" line="112"/>
+        <source>Whether turn on Cap Lock when Always ENG is on</source>
         <translation type="unfinished">当一直开启英文输入法时，是否一直打开大小写键</translation>
+    </message>
+    <message>
+        <source>Toggle overlay with a global shortcut</source>
+        <translation type="unfinished">使用全局快捷键开关浮窗显示</translation>
     </message>
 </context>
 </TS>

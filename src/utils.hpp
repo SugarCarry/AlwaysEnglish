@@ -6,7 +6,15 @@
 #include <QProcess>
 #include <QSettings>
 #include <QStringList>
+#include <QWindow>
 #include "singleton.h"
+#include <windows.h>
+
+// WDA_EXCLUDEFROMCAPTURE 需要 Windows 10 2004 (build 19041) 及以上
+// 若编译时使用的 SDK 头文件较旧未定义该常量, 这里手动补充
+#ifndef WDA_EXCLUDEFROMCAPTURE
+#define WDA_EXCLUDEFROMCAPTURE 0x00000011
+#endif
 
 class Utils : public QObject {
     Q_OBJECT
@@ -19,6 +27,8 @@ public:
     Q_INVOKABLE bool setAutoStart(bool enable) {
         const auto appName = autoStartName();
         removeRegistryAutoStart(appName);
+        removeRegistryAutoStart(legacyAutoStartName());
+        removeStartupTask(legacyAutoStartName());
 
         if (enable) {
             return createStartupTask(appName);
@@ -34,13 +44,30 @@ public:
                || arguments.contains("--silent");
     }
 
+    // 将指定窗口排除出屏幕捕获 (截图/录屏看不到该窗口, 但本机肉眼可见)
+    // 适配 Snipaste、微信、QQ、Win+Shift+S 等所有基于系统捕获的截图工具
+    Q_INVOKABLE bool setExcludeFromCapture(QWindow *window, bool exclude) {
+        if (!window) {
+            return false;
+        }
+        const HWND hwnd = reinterpret_cast<HWND>(window->winId());
+        if (!hwnd) {
+            return false;
+        }
+        return SetWindowDisplayAffinity(hwnd, exclude ? WDA_EXCLUDEFROMCAPTURE : WDA_NONE);
+    }
+
 private:
     static QString autoStartName() {
         auto appName = QCoreApplication::applicationName();
         if (appName.isEmpty()) {
-            appName = "AlwaysEnglish";
+            appName = "AlwaysLang";
         }
         return appName;
+    }
+
+    static QString legacyAutoStartName() {
+        return "AlwaysEnglish";
     }
 
     static void removeRegistryAutoStart(const QString &appName) {

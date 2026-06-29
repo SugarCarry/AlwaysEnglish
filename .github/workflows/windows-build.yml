@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 env:
-  RELEASE_VERSION: "2.0"
-  RELEASE_TAG: "v2.0"
+  RELEASE_VERSION: "3.0"
+  RELEASE_TAG: "v3.0"
 
 jobs:
   build:
@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
@@ -43,7 +45,7 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DGIT_SEMVER=${{ env.RELEASE_VERSION }}
 
       - name: Build
-        run: cmake --build build --target AlwaysEnglish --parallel
+        run: cmake --build build --target AlwaysLang --parallel
 
       - name: Deploy Qt runtime
         run: cmake --build build --target Script-DeployRelease
@@ -66,8 +68,8 @@ jobs:
       - name: Check package
         shell: pwsh
         run: |
-          if (!(Test-Path "dist/AlwaysEnglish.exe")) {
-            throw "dist/AlwaysEnglish.exe was not generated."
+          if (!(Test-Path "dist/AlwaysLang.exe")) {
+            throw "dist/AlwaysLang.exe was not generated."
           }
           Get-ChildItem -Path dist
 
@@ -75,7 +77,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          Compress-Archive -Path dist\* -DestinationPath artifacts\AlwaysEnglish-windows-portable.zip -Force
+          Compress-Archive -Path dist\* -DestinationPath artifacts\AlwaysLang-windows-portable.zip -Force
 
       - name: Build installer
         shell: pwsh
@@ -87,8 +89,8 @@ jobs:
           }
           $outputDir = Join-Path $env:GITHUB_WORKSPACE "artifacts"
           New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
-          & $iscc "/O$outputDir" "/FAlwaysEnglish-installer" InstallerScript.iss
-          $installerPath = Join-Path $outputDir "AlwaysEnglish-installer.exe"
+          & $iscc "/O$outputDir" "/FAlwaysLang-installer" InstallerScript.iss
+          $installerPath = Join-Path $outputDir "AlwaysLang-installer.exe"
           if (!(Test-Path $installerPath)) {
             Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "*.exe" | Select-Object FullName
             throw "$installerPath was not generated."
@@ -97,16 +99,25 @@ jobs:
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:
-          name: AlwaysEnglish-windows-portable
-          path: artifacts/AlwaysEnglish-windows-portable.zip
+          name: AlwaysLang-windows-portable
+          path: artifacts/AlwaysLang-windows-portable.zip
           if-no-files-found: error
 
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
-          name: AlwaysEnglish-windows-installer
-          path: artifacts/AlwaysEnglish-installer.exe
+          name: AlwaysLang-windows-installer
+          path: artifacts/AlwaysLang-installer.exe
           if-no-files-found: error
+
+      - name: Move release tag to current commit
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -fa "${env:RELEASE_TAG}" "${env:GITHUB_SHA}" -m "AlwaysLang ${env:RELEASE_VERSION}"
+          git push --force origin "refs/tags/${env:RELEASE_TAG}"
 
       - name: Publish GitHub Release
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -114,21 +125,21 @@ jobs:
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           target_commitish: ${{ github.sha }}
-          name: AlwaysEnglish ${{ env.RELEASE_VERSION }}
+          name: AlwaysLang ${{ env.RELEASE_VERSION }}
           body: |
-            ## AlwaysEnglish ${{ env.RELEASE_VERSION }}
+            ## AlwaysLang ${{ env.RELEASE_VERSION }}
 
-            本次版本基于原作者 1.1 版本进行二次开发，从 2.0 开始发布。
+            本次版本从 3.0 开始升级为多语言输入法跟随工具，不再只固定英文输入法。
 
             ### 更新内容
-            - 添加 Windows 自动构建工作流
-            - 添加静默开机自启动支持
-            - 添加安装包与便携版构建产物
-            - 修复安装包、Qt 部署依赖和便携版运行问题
-            - 修复自启动本地化和关闭到托盘相关交互
+            - 增加每个软件独立设置目标语言，支持 ENG / 中 / 한
+            - 增加韩语（朝鲜语）输入法目标语言支持
+            - 增加输入位置语言跟随浮层，可在托盘右键菜单开启或关闭
+            - 输入文字时显示当前输入语言状态
+            - 项目用户可见名称改为 AlwaysLang
           files: |
-            artifacts/AlwaysEnglish-windows-portable.zip
-            artifacts/AlwaysEnglish-installer.exe
+            artifacts/AlwaysLang-windows-portable.zip
+            artifacts/AlwaysLang-installer.exe
           overwrite_files: true
           draft: false
           prerelease: false

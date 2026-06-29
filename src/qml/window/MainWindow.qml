@@ -1,7 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Window 2.15
 import FluentUI 1.0
-import Qt.labs.platform
 import "../global"
 
 
@@ -9,7 +8,7 @@ FluWindow {
 
     id: window
     windowIcon: "qrc:/res/images/favicon.ico"
-    title: qsTr("AlwaysEnglish")
+    title: qsTr("AlwaysLang")
     width: 860
     height: 668
     minimumWidth: 668
@@ -18,8 +17,8 @@ FluWindow {
     launchMode: FluWindowType.SingleTask
     autoVisible: !GlobalModel.isAutoStartLaunch
     closeListener: function(event) {
-        minimizeToTray()
-        event.accepted = false
+        event.accepted = true
+        FluRouter.exit(0)
     }
 
     appBar: FluAppBar {
@@ -36,6 +35,18 @@ FluWindow {
 
     Component.onDestruction: {
         FluRouter.exit()
+    }
+
+    Connections {
+        target: ControlInputLayout
+
+        function onCurrentLanguageChanged(language) {
+            GlobalModel.currentLanguage = language
+        }
+
+        function onCaretRectChanged(rect) {
+            GlobalModel.caretRect = rect
+        }
     }
 
     FluNavigationView {
@@ -64,26 +75,31 @@ FluWindow {
         anchors.fill: parent
     }
 
-    SystemTrayIcon {
-        id: system_tray
-        visible: true
-        icon.source: "qrc:/res/images/favicon.ico"
-        tooltip: "AlwaysEnglish"
-        menu: Menu {
-            MenuItem {
-                text: qsTr("Quit")
-                onTriggered: {
-                    FluRouter.exit()
-                }
-            }
+    Connections {
+        target: NativeTray
+
+        function onShowWindowRequested() {
+            console.log("MainWindow: onShowWindowRequested called")
+            restoreFromTray()
         }
-        onActivated:
-                (reason) => {
-            if (reason === SystemTrayIcon.Trigger) {
-                window.show()
-                window.raise()
-                window.requestActivate()
-            }
+
+        function onToggleLanguageFollowDisplayRequested() {
+            console.log("MainWindow: onToggleLanguageFollowDisplayRequested, current:", GlobalModel.languageFollowDisplay)
+            GlobalModel.languageFollowDisplay = !GlobalModel.languageFollowDisplay
+            SettingsHelper.saveLanguageFollowDisplay(GlobalModel.languageFollowDisplay)
+            NativeTray.setLanguageFollowDisplay(GlobalModel.languageFollowDisplay)
+            console.log("MainWindow: languageFollowDisplay changed to:", GlobalModel.languageFollowDisplay)
+        }
+
+        function onSettingsRequested() {
+            console.log("MainWindow: onSettingsRequested called")
+            restoreFromTray()
+            nav_view.push("qrc:/qml/page/settings.qml")
+        }
+
+        function onQuitRequested() {
+            console.log("MainWindow: onQuitRequested called")
+            FluRouter.exit(0)
         }
     }
 
@@ -95,11 +111,79 @@ FluWindow {
         }
     }
 
+    Timer {
+        // 高频采样 (约 60fps) 让浮窗位置更新更连续, 避免大幅跳变
+        // getCaretRect / getCurrentInputLanguage 均为轻量 Win32 调用,
+        // 且值未变化时 C++ 端不发信号, 鼠标静止时无额外开销
+        interval: 16
+        running: GlobalModel.languageFollowDisplay
+        repeat: true
+        onTriggered: {
+            // 触发一次刷新即可, currentLanguage / caretRect 的变化
+            // 由上方 Connections 监听 C++ 信号后写入 GlobalModel
+            ControlInputLayout.refreshCurrentLanguage()
+        }
+    }
+
+    Window {
+        id: language_overlay
+        width: 42
+        height: 30
+
+        // 目标位置 (跟随光标 + 偏移)
+        readonly property int targetX: GlobalModel.caretRect.valid ? Math.max(0, GlobalModel.caretRect.x + 10) : 0
+        readonly property int targetY: GlobalModel.caretRect.valid ? Math.max(0, GlobalModel.caretRect.y + 10) : 0
+
+        x: targetX
+        y: targetY
+        visible: GlobalModel.languageFollowDisplay && GlobalModel.caretRect.valid && GlobalModel.currentLanguage !== "--"
+        flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus | Qt.BypassWindowManagerHint
+        color: "transparent"
+        // 整体不透明度由设置项控制 (10 - 50 映射为 0.1 - 0.5)
+        opacity: Math.max(0.1, Math.min(0.5, GlobalModel.languageOverlayOpacity / 100))
+
+        // 跟随策略: 大距离(快速拖动)直接瞬移, 零延迟跟手;
+        // 小距离(细微移动)用快速平滑动画, 去除抖动。
+        // Behavior 的 enabled 在位置即将变化时按"目标与当前的距离"判断:
+        // 距离 >= 150px 时禁用动画 -> 直接跳到目标, 不再有爬行拖尾
+        Behavior on x {
+            enabled: GlobalModel.caretRect.valid
+                     && Math.abs(language_overlay.targetX - language_overlay.x) < 150
+            SmoothedAnimation { velocity: 3000; easing.type: Easing.OutCubic }
+        }
+        Behavior on y {
+            enabled: GlobalModel.caretRect.valid
+                     && Math.abs(language_overlay.targetY - language_overlay.y) < 150
+            SmoothedAnimation { velocity: 3000; easing.type: Easing.OutCubic }
+        }
+
+        // 窗口创建后将其排除出屏幕捕获 (截图/录屏看不到, 本机肉眼可见)
+        onVisibleChanged: {
+            if (visible) {
+                Utils.setExcludeFromCapture(language_overlay, true)
+            }
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 6
+            color: FluTheme.dark ? Qt.rgba(0.12, 0.12, 0.12, 0.9) : Qt.rgba(1, 1, 1, 0.92)
+            border.width: 1
+            border.color: FluTheme.dark ? "#4C4C4C" : "#D6D6D6"
+
+            FluText {
+                anchors.centerIn: parent
+                text: GlobalModel.currentLanguage
+                font: FluTextStyle.BodyStrong
+            }
+        }
+    }
+
     FluContentDialog {
         id: dialog
         implicitWidth: 500
         title: qsTr("Warning")
-        message: qsTr("The System dosen't have an English (US) input method insatlled\nThe softeare will be unavailable!\nPlease go to settings to install English (US) language.")
+        message: qsTr("The selected input language is not installed.\nPlease go to Windows language settings to install it first.")
         buttonFlags: FluContentDialogType.PositiveButton
         positiveText: qsTr("go to install")
         onPositiveClicked: {
@@ -114,7 +198,7 @@ FluWindow {
         negativeText: qsTr("Minimize")
         buttonFlags: FluContentDialogType.NegativeButton | FluContentDialogType.NeutralButton | FluContentDialogType.PositiveButton
         onNegativeClicked: {
-            system_tray.showMessage(qsTr("Friendly Reminder"), qsTr("AlwaysEnglish is hidden from the tray, click on the tray to activate the window again"));
+            NativeTray.showMessage(qsTr("Friendly Reminder"), qsTr("AlwaysLang is hidden from the tray, click on the tray to activate the window again"));
             timer_window_hide_delay.restart()
         }
         positiveText: qsTr("Quit")
@@ -124,15 +208,35 @@ FluWindow {
         }
     }
 
-    // Component.onCompleted: {
-    //     var isEnglishInputInstalled = ControlInputLayout.isEnglishInputInstalled()
-    //     if (!isEnglishInputInstalled) {
-    //         dialog.open()
-    //     }
-    // }
+    Component.onCompleted: {
+        console.log("MainWindow: Component.onCompleted")
+        console.log("MainWindow: window object:", window)
+        console.log("MainWindow: languageFollowDisplay:", GlobalModel.languageFollowDisplay)
+        NativeTray.setWindow(window)
+        NativeTray.setLanguageFollowDisplay(GlobalModel.languageFollowDisplay)
+    }
 
     function minimizeToTray() {
-        timer_window_hide_delay.restart()
+        if (NativeTray.available()) {
+            timer_window_hide_delay.restart()
+        } else {
+            restoreFromTray()
+        }
+    }
+
+    function restoreFromTray() {
+        console.log("MainWindow: restoreFromTray called, current visibility:", window.visibility)
+        timer_window_hide_delay.stop()
+        if (window.visibility === Window.Minimized) {
+            window.showNormal()
+        } else if (window.visibility === Window.Hidden) {
+            window.show()
+        } else {
+            window.show()
+        }
+        window.raise()
+        window.requestActivate()
+        console.log("MainWindow: restoreFromTray completed, visibility:", window.visibility)
     }
 
     function changeDark() {

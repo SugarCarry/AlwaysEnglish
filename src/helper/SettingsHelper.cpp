@@ -1,6 +1,9 @@
 #include "SettingsHelper.h"
 
 #include <QDataStream>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QStandardPaths>
 
 SettingsHelper::SettingsHelper(QObject *parent) : QObject(parent) {
@@ -24,7 +27,14 @@ void SettingsHelper::init(char *argv[]) {
     QString applicationPath = QString::fromStdString(argv[0]);
     const QFileInfo fileInfo(applicationPath);
     const QString iniFileName = fileInfo.completeBaseName() + ".ini";
-    const QString iniFilePath =
-            QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/" + iniFileName;
+    const QString settingsDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+    QDir().mkpath(settingsDir);
+    const QString iniFilePath = settingsDir + "/" + iniFileName;
+    const QString oldIniFilePath = QFileInfo(settingsDir).absolutePath() + "/AlwaysEnglish/AlwaysEnglish.ini";
+
+    if (iniFileName != "AlwaysEnglish.ini" && !QFile::exists(iniFilePath) && QFile::exists(oldIniFilePath)) {
+        QFile::copy(oldIniFilePath, iniFilePath);
+    }
+
     m_settings.reset(new QSettings(iniFilePath, QSettings::IniFormat));
 }
