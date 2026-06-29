@@ -1,0 +1,135 @@
+name: Windows Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_VERSION: "2.0"
+  RELEASE_TAG: "v2.0"
+
+jobs:
+  build:
+    name: Build Windows portable package
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.6.3"
+          host: "windows"
+          target: "desktop"
+          arch: "win64_msvc2019_64"
+          modules: "qt5compat qtshadertools"
+          cache: true
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DGIT_SEMVER=${{ env.RELEASE_VERSION }}
+
+      - name: Build
+        run: cmake --build build --target AlwaysEnglish --parallel
+
+      - name: Deploy Qt runtime
+        run: cmake --build build --target Script-DeployRelease
+
+      - name: Bundle MSVC runtime
+        shell: pwsh
+        run: |
+          # windeployqt --compiler-runtime 仅复制 vc_redist.x64.exe 安装器，
+          # 便携包需要松散的 CRT DLL，否则在未安装运行库的机器上双击无反应。
+          Remove-Item -Path "dist/vc_redist.x64.exe" -ErrorAction SilentlyContinue
+          $crtDir = Get-ChildItem -Path "$env:VCToolsRedistDir\x64" -Filter "Microsoft.VC*.CRT" -Directory |
+            Sort-Object Name -Descending | Select-Object -First 1
+          if (-not $crtDir) {
+            throw "Could not locate Microsoft.VC*.CRT under $env:VCToolsRedistDir\x64"
+          }
+          Copy-Item -Path (Join-Path $crtDir.FullName "*.dll") -Destination "dist" -Force
+          Write-Host "Copied CRT runtime from $($crtDir.FullName):"
+          Get-ChildItem -Path "dist" -Filter "*140*.dll" | Select-Object Name
+
+      - name: Check package
+        shell: pwsh
+        run: |
+          if (!(Test-Path "dist/AlwaysEnglish.exe")) {
+            throw "dist/AlwaysEnglish.exe was not generated."
+          }
+          Get-ChildItem -Path dist
+
+      - name: Archive portable package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          Compress-Archive -Path dist\* -DestinationPath artifacts\AlwaysEnglish-windows-portable.zip -Force
+
+      - name: Build installer
+        shell: pwsh
+        working-directory: package
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $iscc)) {
+            $iscc = "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
+          }
+          $outputDir = Join-Path $env:GITHUB_WORKSPACE "artifacts"
+          New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
+          & $iscc "/O$outputDir" "/FAlwaysEnglish-installer" InstallerScript.iss
+          $installerPath = Join-Path $outputDir "AlwaysEnglish-installer.exe"
+          if (!(Test-Path $installerPath)) {
+            Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "*.exe" | Select-Object FullName
+            throw "$installerPath was not generated."
+          }
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlwaysEnglish-windows-portable
+          path: artifacts/AlwaysEnglish-windows-portable.zip
+          if-no-files-found: error
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlwaysEnglish-windows-installer
+          path: artifacts/AlwaysEnglish-installer.exe
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          name: AlwaysEnglish ${{ env.RELEASE_VERSION }}
+          body: |
+            ## AlwaysEnglish ${{ env.RELEASE_VERSION }}
+
+            本次版本基于原作者 1.1 版本进行二次开发，从 2.0 开始发布。
+
+            ### 更新内容
+            - 添加 Windows 自动构建工作流
+            - 添加静默开机自启动支持
+            - 添加安装包与便携版构建产物
+            - 修复安装包、Qt 部署依赖和便携版运行问题
+            - 修复自启动本地化和关闭到托盘相关交互
+          files: |
+            artifacts/AlwaysEnglish-windows-portable.zip
+            artifacts/AlwaysEnglish-installer.exe
+          overwrite_files: true
+          draft: false
+          prerelease: false
+          make_latest: true

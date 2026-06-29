@@ -55,9 +55,14 @@ FluScrollablePage {
             anchors.verticalCenter: parent.verticalCenter
 
             onClicked: {
+                if (!Utils.setAutoStart(checked)) {
+                    checked = !checked
+                    showError(qsTr("Please run AlwaysEnglish as administrator once to change startup settings"), 5000)
+                    return
+                }
+
                 GlobalModel.isAutoStart = checked
                 SettingsHelper.saveAutoStart(GlobalModel.isAutoStart)
-                Utils.setAutoStart(checked)
             }
 
             Component.onCompleted: {

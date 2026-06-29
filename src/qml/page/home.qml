@@ -153,6 +153,7 @@ FluContentPage {
 
                 // 启动
                 ControlInputLayout.startTask()
+                GlobalModel.isTaskRunning = true
 
                 showSuccess(qsTr("Start Successfully"))
             } else {
@@ -162,6 +163,7 @@ FluContentPage {
 
                 // 停止
                 ControlInputLayout.stopTask()
+                GlobalModel.isTaskRunning = false
             }
         }
     }
@@ -323,12 +325,12 @@ FluContentPage {
     Component.onCompleted: {
         var openCount = SettingsHelper.getOpenCount()
 
-        if (openCount < 3) {
+        if (!GlobalModel.isAutoStartLaunch && openCount < 3) {
             tour.open()
         }
 
         if (!GlobalModel.exeInfos) {
-            return;
+            GlobalModel.exeInfos = ({})
         }
 
         for (let key in GlobalModel.exeInfos) {
@@ -341,6 +343,20 @@ FluContentPage {
                 action: table_view.customItem(com_action),
                 _key: FluTools.uuid()
             })
+        }
+
+        if (GlobalModel.isTaskRunning
+                || (!GlobalModel.hasAutoStartedTask && (GlobalModel.isAutoStart || GlobalModel.isAutoStartLaunch))) {
+            isChecked = true
+            dragEnabled = false
+            myBtn.text = qsTr("Stop")
+            btn_AlwaysEnglish.enabled = false
+            btn_addApp.enabled = false
+            if (!GlobalModel.isTaskRunning) {
+                ControlInputLayout.startTask()
+                GlobalModel.isTaskRunning = true
+                GlobalModel.hasAutoStartedTask = true
+            }
         }
     }
 
