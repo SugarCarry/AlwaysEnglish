@@ -46,6 +46,8 @@ private:
 
     QString getCurrentInputLanguage() const;
 
+    HKL activeKeyboardLayout() const;
+
     QVariantMap getCaretRect() const;
 
     QString normalizeLanguage(const QString &language) const;

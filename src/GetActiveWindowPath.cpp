@@ -14,8 +14,9 @@ QString GetActiveWindowPath::GetProcessPathByWindowHandle(HWND hwnd) {
 
     HANDLE processHandle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processId);
     if (processHandle == NULL) {
-        qDebug() << "无法打开进程，错误代码: " << GetLastError();
-        return "error: 无法打开进程，错误代码: ";
+        DWORD errorCode = GetLastError();
+        qDebug() << "无法打开进程，错误代码: " << errorCode;
+        return QString("error: 无法打开进程，错误代码: %1").arg(errorCode);
     }
 
     WCHAR processPath[MAX_PATH];

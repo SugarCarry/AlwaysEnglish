@@ -84,11 +84,14 @@ FluWindow {
         }
 
         function onToggleLanguageFollowDisplayRequested() {
-            console.log("MainWindow: onToggleLanguageFollowDisplayRequested, current:", GlobalModel.languageFollowDisplay)
-            GlobalModel.languageFollowDisplay = !GlobalModel.languageFollowDisplay
-            SettingsHelper.saveLanguageFollowDisplay(GlobalModel.languageFollowDisplay)
-            NativeTray.setLanguageFollowDisplay(GlobalModel.languageFollowDisplay)
-            console.log("MainWindow: languageFollowDisplay changed to:", GlobalModel.languageFollowDisplay)
+            // 强制刷新浮层可见性
+            if (GlobalModel.languageFollowDisplay) {
+                language_overlay.show()
+                language_overlay.visible = true
+            } else {
+                language_overlay.hide()
+                language_overlay.visible = false
+            }
         }
 
         function onSettingsRequested() {
@@ -136,7 +139,7 @@ FluWindow {
 
         x: targetX
         y: targetY
-        visible: GlobalModel.languageFollowDisplay && GlobalModel.caretRect.valid && GlobalModel.currentLanguage !== "--"
+        visible: GlobalModel.languageFollowDisplay && GlobalModel.caretRect.valid
         flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus | Qt.BypassWindowManagerHint
         color: "transparent"
         // 整体不透明度由设置项控制 (10 - 50 映射为 0.1 - 0.5)

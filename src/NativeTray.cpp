@@ -164,3 +164,7 @@ void NativeTray::updateToggleText() {
     m_toggleLanguageFollowAction->setText(tr("Input position language display") + QStringLiteral(": ") + status);
     m_toggleLanguageFollowAction->setChecked(m_languageFollowDisplay);
 }
+
+void NativeTray::triggerToggleLanguageFollowDisplay() {
+    emit toggleLanguageFollowDisplayRequested();
+}

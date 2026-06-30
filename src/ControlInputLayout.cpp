@@ -4,6 +4,7 @@
 #include <QJSValue>
 #include <QVariantMap>
 #include <QtGlobal>
+#include <windows.h>
 #include <imm.h>
 
 // WM_IME_CONTROL 的子命令常量在部分 Windows SDK 的 imm.h 中未公开定义,
@@ -183,10 +184,12 @@ void ControlInputLayout::switchToLanguage(const QString &language) {
         return;
     }
 
-    const DWORD threadId = GetWindowThreadProcessId(foregroundWindow, NULL);
-    HKL hkl = GetKeyboardLayout(threadId);
+    HKL currentLayout = activeKeyboardLayout();
+    if (!currentLayout) {
+        return;
+    }
 
-    if (!layoutMatchesLanguage(hkl, normalizedLanguage)) {
+    if (!layoutMatchesLanguage(currentLayout, normalizedLanguage)) {
         PostMessage(foregroundWindow, WM_INPUTLANGCHANGEREQUEST, 0,
                     reinterpret_cast<LPARAM>(targetLayout));
     }
@@ -200,14 +203,27 @@ void ControlInputLayout::capLock() {
     }
 }
 
+HKL ControlInputLayout::activeKeyboardLayout() const {
+    const HWND foregroundWindow = GetForegroundWindow();
+    if (!foregroundWindow) {
+        return nullptr;
+    }
+
+    const DWORD threadId = GetWindowThreadProcessId(foregroundWindow, NULL);
+    return GetKeyboardLayout(threadId);
+}
+
 QString ControlInputLayout::getCurrentInputLanguage() const {
     const HWND foregroundWindow = GetForegroundWindow();
     if (!foregroundWindow) {
         return "--";
     }
 
-    const DWORD threadId = GetWindowThreadProcessId(foregroundWindow, NULL);
-    HKL hkl = GetKeyboardLayout(threadId);
+    HKL hkl = activeKeyboardLayout();
+    if (!hkl) {
+        return "--";
+    }
+
     const auto langId = LOWORD(reinterpret_cast<quintptr>(hkl));
     const QString layoutLanguage = languageNameFromLangId(langId);
 
@@ -219,8 +235,9 @@ QString ControlInputLayout::getCurrentInputLanguage() const {
     // 中文/韩文等 IME: 键盘布局语言无法反映"中/英"子模式
     // 需查询 IME 的转换模式 (IME_CMODE_NATIVE): 置位为本地语言(中/한), 清除为英文
     // 跨进程查询用 WM_IME_CONTROL + IMC_GETCONVERSIONMODE 发送到目标窗口的默认 IME 窗口
-    bool nativeMode = true;
+    bool nativeMode = false;  // 默认为英文模式，避免无 IME 窗口时误判
     const HWND hwndIme = ImmGetDefaultIMEWnd(foregroundWindow);
+
     if (hwndIme) {
         DWORD_PTR conversionMode = 0;
         const LRESULT ok = SendMessageTimeoutW(hwndIme, WM_IME_CONTROL,
@@ -229,6 +246,14 @@ QString ControlInputLayout::getCurrentInputLanguage() const {
                                                &conversionMode);
         if (ok) {
             nativeMode = (conversionMode & IME_CMODE_NATIVE) != 0;
+        }
+    } else {
+        // 无 IME 窗口时（如 CMD、PowerShell），通过输入上下文查询 IME 打开状态
+        HIMC inputContext = ImmGetContext(foregroundWindow);
+        if (inputContext) {
+            // IME 打开状态: true=中文/韩文模式, false=英文模式
+            nativeMode = ImmGetOpenStatus(inputContext) != FALSE;
+            ImmReleaseContext(foregroundWindow, inputContext);
         }
     }
 
@@ -297,6 +322,24 @@ QVariantMap ControlInputLayout::getCaretRect() const {
         return rect;
     }
 
+    // 优先检查是否为控制台窗口，直接返回固定位置
+    wchar_t className[256] = {0};
+    if (GetClassNameW(foregroundWindow, className, 256) > 0) {
+        if (wcscmp(className, L"ConsoleWindowClass") == 0) {
+            // CMD/PowerShell: 显示在窗口左上角偏移位置
+            RECT windowRect;
+            if (GetWindowRect(foregroundWindow, &windowRect)) {
+                POINT point = {windowRect.left + 12, windowRect.top + 80};
+                rect["x"] = static_cast<qlonglong>(point.x);
+                rect["y"] = static_cast<qlonglong>(point.y);
+                rect["width"] = static_cast<qlonglong>(1);
+                rect["height"] = static_cast<qlonglong>(24);
+                rect["valid"] = true;
+                return rect;
+            }
+        }
+    }
+
     auto setRectFromPoint = [&rect](const POINT &point, LONG width, LONG height) {
         rect["x"] = static_cast<qlonglong>(point.x);
         rect["y"] = static_cast<qlonglong>(point.y);
@@ -347,6 +390,7 @@ QVariantMap ControlInputLayout::getCaretRect() const {
 
     RECT windowRect;
     if (GetWindowRect(foregroundWindow, &windowRect)) {
+        // 其他窗口: 使用默认偏移
         POINT point = {windowRect.left + 16, windowRect.top + 48};
         setRectFromPoint(point, 1, 24);
     }
